@@ -58,7 +58,7 @@ func (t *TGateway) OnPacket(nbytes int, buffer []byte, con *net.UDPConn, addr *n
 	buf := bytes.NewBuffer(buffer)
 	rawmsg, _ := ReadPacket(buf)
 
-	INFO.Printf("rawmsg.MessageType(): %s\n", MessageNames[rawmsg.MessageType()])
+	//INFO.Printf("rawmsg.MessageType(): %s\n", MessageNames[rawmsg.MessageType()])
 
 	switch msg := rawmsg.(type) {
 	case *AdvertiseMessage:
