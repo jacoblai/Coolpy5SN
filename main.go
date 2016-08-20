@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"os/signal"
-	G "gateway/gate"
+	"gate"
 	"flag"
 )
 
@@ -15,18 +15,18 @@ func main() {
 	flag.IntVar(&udpport, "port", 1884, "MQTT-SN Gateway UDP Listening Port")
 	flag.Parse()
 
-	var gateway G.Gateway
+	var gw gateway.Gateway
 	stopsig := registerSignals()
 
-	G.InitLogger(os.Stdout, os.Stderr) // todo: configurable
+	gateway.InitLogger(os.Stdout, os.Stderr)
 
-	gateway = initTransparent(udpport,broker, stopsig)
+	gw = initTransparent(udpport, broker, stopsig)
 
-	gateway.Start()
+	gw.Start()
 }
 
-func initTransparent(udpport int,broker string, stopsig chan os.Signal) *G.TGateway {
-	t := G.NewTGateway(udpport,broker, stopsig)
+func initTransparent(udpport int, broker string, stopsig chan os.Signal) *gateway.TGateway {
+	t := gateway.NewTGateway(udpport, broker, stopsig)
 	return t
 }
 
