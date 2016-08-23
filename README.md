@@ -1,2 +1,2 @@
 # Coolpy5SN
-Coolpy5 MQTT-SN Gateway
+Coolpy5 SN
