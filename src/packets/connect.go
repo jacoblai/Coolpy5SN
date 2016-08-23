@@ -41,6 +41,7 @@ func (c *ConnectMessage) Write(w io.Writer) error {
 	packet.WriteByte(c.ProtocolId)
 	packet.Write(encodeUint16(c.Duration))
 	packet.Write([]byte(c.ClientId))
+	//fmt.Printf("% x\n", packet.Bytes())
 	_, err := packet.WriteTo(w)
 
 	return err

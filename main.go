@@ -20,14 +20,14 @@ func main() {
 
 	gateway.InitLogger(os.Stdout, os.Stderr)
 
-	gw = initTransparent(udpport, broker, stopsig)
+	gw = initAggregating(udpport, broker, stopsig)
 
 	gw.Start()
 }
 
-func initTransparent(udpport int, broker string, stopsig chan os.Signal) *gateway.TGateway {
-	t := gateway.NewTGateway(udpport, broker, stopsig)
-	return t
+func initAggregating(udpport int, broker string, stopsig chan os.Signal) *gateway.AGateway {
+	a := gateway.NewAGateway(udpport, broker, stopsig)
+	return a
 }
 
 func registerSignals() chan os.Signal {
