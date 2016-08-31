@@ -377,7 +377,12 @@ func (ag *AGateway) handle_SUBSCRIBE(m *SubscribeMessage, c *net.UDPConn, r *net
 		}
 		// AG is subscribed at this point
 		client.Register(topicid, topic)
-		suba := NewSubackMessage(topicid, m.MessageId, m.Qos, 0)
+		suba := NewMessage(SUBACK).(*SubackMessage) // todo: 0 ?
+		suba.TopicId= topicid
+		suba.MessageId = m.MessageId
+		suba.Qos = m.Qos
+		suba.ReturnCode = 0
+		//suba := NewSubackMessage(topicid, m.MessageId, m.Qos, 0)
 		var buf bytes.Buffer
 		suba.Write(&buf)
 		if nbytes, err := c.WriteToUDP(buf.Bytes(), r); err != nil {
