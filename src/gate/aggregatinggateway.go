@@ -140,7 +140,7 @@ func (ag *AGateway) publish(msg MQTT.Message, client *Client) {
 }
 
 func (ag *AGateway) OnPacket(nbytes int, buffer []byte, con *net.UDPConn, addr *net.UDPAddr) {
-	INFO.Printf("OnPacket!  - bytes: %s\n", string(buffer[0:nbytes]))
+	//INFO.Printf("OnPacket!  - bytes: %s\n", string(buffer[0:nbytes]))
 
 	buf := bytes.NewBuffer(buffer)
 	rawmsg, _ := ReadPacket(buf)
@@ -283,7 +283,11 @@ func (ag *AGateway) handle_REGISTER(m *RegisterMessage, c *net.UDPConn, r *net.U
 
 	INFO.Printf("ag topicid: %d\n", topicid)
 
-	ra := NewRegackMessage(topicid, m.MessageId, 0)
+	ra := NewMessage(REGACK).(*RegackMessage) // todo: 0 ?
+	ra.TopicId= topicid
+	ra.MessageId = m.MessageId
+	ra.ReturnCode = 0
+	//ra := NewRegackMessage(topicid, m.MessageId, 0)
 	INFO.Printf("ra.MsgId: %d\n", ra.MessageId)
 
 	if err := client.Write(ra); err != nil {
