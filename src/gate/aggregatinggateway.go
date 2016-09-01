@@ -118,8 +118,15 @@ func (ag *AGateway) publish(msg MQTT.Message, client *Client) {
 	topicid := ag.tIndex.getId(msg.Topic())
 	// topicidtype := byte(0x00) // todo: pre-defined (1) and shortname (2)
 	// msgid := uint16(0x00) // todo: what should this be??
-	pm := NewPublishMessage(topicid, 0x00, msg.Payload(), msg.Qos(), 0x00, msg.Retained(), msg.Duplicate())
-
+	//pm := NewPublishMessage(topicid, 0x00, msg.Payload(), msg.Qos(), 0x00, msg.Retained(), msg.Duplicate())
+	pm := NewMessage(PUBLISH).(*PublishMessage) // todo: 0 ?
+	pm.TopicId = topicid
+	pm.TopicIdType = 0x00
+	pm.Data= msg.Payload()
+	pm.Qos= msg.Qos()
+	pm.MessageId= uint16((0x00))
+	pm.Retain=msg.Retained()
+	pm.Dup=msg.Duplicate()
 	if client.Registered(topicid) {
 		INFO.Printf("client \"%s\" already registered to %d, publish ahoy!\n", client, topicid)
 		if err := client.Write(pm); err != nil {
