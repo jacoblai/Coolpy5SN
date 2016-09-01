@@ -357,6 +357,21 @@ func (ag *AGateway) handle_SUBSCRIBE(m *SubscribeMessage, c *net.UDPConn, r *net
 	INFO.Printf("handle_%s from %v\n", m.MessageType(), r)
 	INFO.Printf("m.TopicIdType: %d\n", m.TopicIdType)
 	topic := string(m.TopicName)
+	if ag.tIndex.containsTopic(topic) {
+		suba := NewMessage(SUBACK).(*SubackMessage) // todo: 0 ?
+		suba.TopicId= ag.tIndex.getId(topic)
+		suba.MessageId = m.MessageId
+		suba.Qos = m.Qos
+		suba.ReturnCode = 0x00
+		var buf bytes.Buffer
+		suba.Write(&buf)
+		if nbytes, err := c.WriteToUDP(buf.Bytes(), r); err != nil {
+			ERROR.Println(err)
+		} else {
+			INFO.Printf("SUBACK sent %d bytes\n", nbytes)
+		}
+		return
+	}
 	var topicid uint16
 	if m.TopicIdType == 0 {
 		INFO.Printf("m.TopicName: %s\n", topic)
