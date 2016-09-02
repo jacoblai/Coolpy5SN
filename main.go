@@ -8,11 +8,11 @@ import (
 )
 
 func main() {
-	var broker string
-	var udpport int
-
-	flag.StringVar(&broker, "broker", "tcp://localhost:1883", "Configuration File")
-	flag.IntVar(&udpport, "port", 1884, "MQTT-SN Gateway UDP Listening Port")
+	var (
+		broker = flag.String("b", "tcp://localhost:1883", "Coolpy5 mqtt broker addr default tcp://localhost:1883")
+		cphttp = flag.String("h", "http://localhost:6543", "Coolpy5 http api addr default http://localhost:6543")
+		udpport = flag.Int("p", 1884, "MQTT-SN Gateway UDP Listening Port default 1884")
+	)
 	flag.Parse()
 
 	var gw gateway.Gateway
@@ -20,13 +20,13 @@ func main() {
 
 	gateway.InitLogger(os.Stdout, os.Stderr)
 
-	gw = initAggregating(udpport, broker, stopsig)
+	gw = initAggregating(*udpport, *broker, *cphttp, stopsig)
 
 	gw.Start()
 }
 
-func initAggregating(udpport int, broker string, stopsig chan os.Signal) *gateway.AGateway {
-	a := gateway.NewAGateway(udpport, broker, stopsig)
+func initAggregating(udpport int, broker string, cphttp string, stopsig chan os.Signal) *gateway.AGateway {
+	a := gateway.NewAGateway(udpport, broker, cphttp, stopsig)
 	return a
 }
 

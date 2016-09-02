@@ -11,6 +11,9 @@ import (
 	MQTT "git.eclipse.org/gitroot/paho/org.eclipse.paho.mqtt.golang.git"
 
 	. "packets"
+	"Dispatcher"
+	"strings"
+	"strconv"
 )
 
 type AGateway struct {
@@ -21,9 +24,10 @@ type AGateway struct {
 	tTree      *TopicTree
 	clients    Clients
 	handler    MQTT.MessageHandler
+	cpHttp     string
 }
 
-func NewAGateway(udpport int,broker string, stopsig chan os.Signal) *AGateway {
+func NewAGateway(udpport int, broker string, cphttp string, stopsig chan os.Signal) *AGateway {
 	MQTT.WARN = log.New(os.Stdout, "", 0)
 	MQTT.DEBUG = log.New(os.Stdout, "", 0)
 	MQTT.CRITICAL = log.New(os.Stdout, "", 0)
@@ -58,6 +62,7 @@ func NewAGateway(udpport int,broker string, stopsig chan os.Signal) *AGateway {
 			make(map[string]SNClient),
 		},
 		nil,
+		cphttp,
 	}
 
 	ag.handler = func(client *MQTT.Client, msg MQTT.Message) {
@@ -122,11 +127,11 @@ func (ag *AGateway) publish(msg MQTT.Message, client *Client) {
 	pm := NewMessage(PUBLISH).(*PublishMessage) // todo: 0 ?
 	pm.TopicId = topicid
 	pm.TopicIdType = 0x00
-	pm.Data= msg.Payload()
-	pm.Qos= msg.Qos()
-	pm.MessageId= uint16((0x00))
-	pm.Retain=msg.Retained()
-	pm.Dup=msg.Duplicate()
+	pm.Data = msg.Payload()
+	pm.Qos = msg.Qos()
+	pm.MessageId = uint16((0x00))
+	pm.Retain = msg.Retained()
+	pm.Dup = msg.Duplicate()
 	if client.Registered(topicid) {
 		INFO.Printf("client \"%s\" already registered to %d, publish ahoy!\n", client, topicid)
 		if err := client.Write(pm); err != nil {
@@ -291,7 +296,7 @@ func (ag *AGateway) handle_REGISTER(m *RegisterMessage, c *net.UDPConn, r *net.U
 	INFO.Printf("ag topicid: %d\n", topicid)
 
 	ra := NewMessage(REGACK).(*RegackMessage) // todo: 0 ?
-	ra.TopicId= topicid
+	ra.TopicId = topicid
 	ra.MessageId = m.MessageId
 	ra.ReturnCode = 0
 	//ra := NewRegackMessage(topicid, m.MessageId, 0)
@@ -322,6 +327,8 @@ func (ag *AGateway) handle_REGACK(m *RegackMessage, r *net.UDPAddr) {
 	}
 }
 
+var dispatcher *Dispatcher.Dispatcher;
+
 func (ag *AGateway) handle_PUBLISH(m *PublishMessage, r *net.UDPAddr) {
 	INFO.Printf("handle_%s from %v\n", m.MessageType(), r)
 
@@ -329,6 +336,20 @@ func (ag *AGateway) handle_PUBLISH(m *PublishMessage, r *net.UDPAddr) {
 	INFO.Printf("m.Data: %s\n", string(m.Data))
 
 	topic := ag.tIndex.getTopic(m.TopicId)
+	if topic == ""{
+		return
+	}
+	if dispatcher == nil {
+		dispatcher = Dispatcher.NewDispatcher(100, ag.cpHttp)
+		dispatcher.Run()
+	}
+	var job Dispatcher.Job
+	stopic := strings.Split(topic, ":")
+	job.Ukey = stopic[0]
+	job.HubId, _ = strconv.ParseInt(stopic[1], 10, 64)
+	job.NodeId, _ = strconv.ParseInt(stopic[2], 10, 64)
+	job.CpJson = m.Data
+	dispatcher.JobQueue <- job
 
 	// TODO: what should the MQTT-QoS be set as? In case of MQTTSN-QoS -1 ?
 	if token := ag.mqttclient.Publish(topic, m.Qos, m.Retain, m.Data); token.WaitTimeout(2000) && token.Error() != nil {
@@ -359,7 +380,7 @@ func (ag *AGateway) handle_SUBSCRIBE(m *SubscribeMessage, c *net.UDPConn, r *net
 	topic := string(m.TopicName)
 	if ag.tIndex.containsTopic(topic) {
 		suba := NewMessage(SUBACK).(*SubackMessage) // todo: 0 ?
-		suba.TopicId= ag.tIndex.getId(topic)
+		suba.TopicId = ag.tIndex.getId(topic)
 		suba.MessageId = m.MessageId
 		suba.Qos = m.Qos
 		suba.ReturnCode = 0x00
@@ -400,7 +421,7 @@ func (ag *AGateway) handle_SUBSCRIBE(m *SubscribeMessage, c *net.UDPConn, r *net
 		// AG is subscribed at this point
 		client.Register(topicid, topic)
 		suba := NewMessage(SUBACK).(*SubackMessage) // todo: 0 ?
-		suba.TopicId= topicid
+		suba.TopicId = topicid
 		suba.MessageId = m.MessageId
 		suba.Qos = m.Qos
 		suba.ReturnCode = 0
