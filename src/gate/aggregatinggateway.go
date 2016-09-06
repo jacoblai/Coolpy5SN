@@ -14,6 +14,7 @@ import (
 	"Dispatcher"
 	"strings"
 	"strconv"
+	"runtime"
 )
 
 type AGateway struct {
@@ -336,11 +337,11 @@ func (ag *AGateway) handle_PUBLISH(m *PublishMessage, r *net.UDPAddr) {
 	INFO.Printf("m.Data: %s\n", string(m.Data))
 
 	topic := ag.tIndex.getTopic(m.TopicId)
-	if topic == ""{
+	if topic == "" {
 		return
 	}
 	if dispatcher == nil {
-		dispatcher = Dispatcher.NewDispatcher(100, ag.cpHttp)
+		dispatcher = Dispatcher.NewDispatcher((runtime.NumCPU() * 2) * 4, ag.cpHttp)
 		dispatcher.Run()
 	}
 	var job Dispatcher.Job
