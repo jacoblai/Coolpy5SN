@@ -49,21 +49,21 @@ func NewAGateway(udpport int, broker string, cphttp string, stopsig chan os.Sign
 	//}
 	client := MQTT.NewClient(opts)
 	ag := &AGateway{
-		client,
-		stopsig,
-		udpport,
-		topicNames{
+		mqttclient: client,
+		stopsig: stopsig,
+		port: udpport,
+		tIndex: topicNames{
 			sync.RWMutex{},
 			make(map[uint16]string),
 			0,
 		},
-		NewTopicTree(),
-		Clients{
+		tTree: NewTopicTree(),
+		clients: Clients{
 			sync.RWMutex{},
 			make(map[string]SNClient),
 		},
-		nil,
-		cphttp,
+		handler: nil,
+		cpHttp: cphttp,
 	}
 
 	ag.handler = func(client *MQTT.Client, msg MQTT.Message) {
